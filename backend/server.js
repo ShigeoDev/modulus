@@ -1,8 +1,11 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const InfoModel = require('./models/info.js');
-const mongoose = require('mongoose');
+import express from 'express';
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import cors from 'cors';
+
+import login from './login/login.js';
+
+dotenv.config();
 
 const app = express();
 
@@ -16,24 +19,11 @@ mongoose.connect(MONGO_URL)
 app.use(cors());
 app.use(express.json());
 
-app.get('/api/test', (req, res) => {
-  res.json('Test Success');
-});
+app.use('/api/login', login);
 
-app.post('/api/button', async (req, res) => {
-  try {
-    const { info } = req.body;
-    const newInfo = await InfoModel.create({ info });
-    res.json({ message: 'Info saved successfully', data: newInfo });
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+app.get('/api', (res) => {
+  res.send('API is running');
+})
 
-app.get('/api/info', async (req, res) => {
-  const info = await InfoModel.find();
-  res.json(info);
-});
+app.listen(5173);
 
-app.listen(3000);
