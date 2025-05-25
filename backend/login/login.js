@@ -1,10 +1,11 @@
-import Router from 'express';
+import express from 'express';
+import jwt from 'jsonwebtoken';
+import UserModel from '../models/user.js';
+import bcrypt from 'bcrypt';
 
-const router = Router();
-
-router.get('/', (req, res) => {
-  res.send('Login endpoint');
-});
+const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const REFRESH_SECRET = process.env.REFRESH_SECRET || 'your-refresh-secret-key';
 
 // Login endpoint
 router.post('/', async (req, res) => {
@@ -18,14 +19,23 @@ router.post('/', async (req, res) => {
     }
 
     // Check password (in a real app, you'd want to hash this)
-    if (user.password !== password) {
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Generate JWT token
-    const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET);
+    const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: "30s"});
+    const refreshToken = jwt.sign({ id: user._id, username: user.username }, REFRESH_SECRET, { expiresIn: "1d"});
     
-    res.json({ token });
+    // Save token to cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Strict',
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: 'Internal server error' });

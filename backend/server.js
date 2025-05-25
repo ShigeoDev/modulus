@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 
 import login from './login/login.js';
+import register from './register/register.js';
 
 dotenv.config();
 
@@ -19,11 +20,17 @@ mongoose.connect(MONGO_URL)
 app.use(cors());
 app.use(express.json());
 
+// API routes
 app.use('/api/login', login);
+app.use('/api/register', register);
 
-app.get('/api', (res) => {
+// API health check
+app.get('/api', (req, res) => {
   res.send('API is running');
-})
+});
 
-app.listen(5173);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 
