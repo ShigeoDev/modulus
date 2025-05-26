@@ -14,12 +14,13 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
-  password: {
+  hashedPassword: {
     type: String,
     required: true
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  collection: 'users'
 });
 
 export default mongoose.model('User', userSchema);

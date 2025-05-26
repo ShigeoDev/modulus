@@ -22,14 +22,11 @@ export default function Login() {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.error || "Login failed");
       }
 
-      // Store the token
-      localStorage.setItem("token", data.token);
       // Navigate to the main page
       navigate('/');
     } catch (error) {

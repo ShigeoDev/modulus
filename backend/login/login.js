@@ -1,11 +1,13 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import UserModel from '../models/user.js';
 import bcrypt from 'bcrypt';
+import prisma from '../lib/prisma.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const REFRESH_SECRET = process.env.REFRESH_SECRET || 'your-refresh-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Login endpoint
 router.post('/', async (req, res) => {
@@ -13,28 +15,32 @@ router.post('/', async (req, res) => {
     const { username, password } = req.body;
     
     // Find user
-    const user = await UserModel.findOne({ username });
+    const user = await prisma.user.findUnique({
+      where: { username }
+    });
+
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Check password (in a real app, you'd want to hash this)
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    // Check password
+    const passwordMatch = await bcrypt.compare(password, user.hashedPassword);
     if (!passwordMatch) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Generate JWT token
-    const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: "30s"});
-    const refreshToken = jwt.sign({ id: user._id, username: user.username }, REFRESH_SECRET, { expiresIn: "1d"});
+    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: "30s"});
     
-    // Save token to cookie
-    res.cookie('refreshToken', refreshToken, {
+    // Set the token in an HTTP-only cookie
+    res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'Strict',
       maxAge: 24 * 60 * 60 * 1000 // 1 day
     });
+
+    return res.status(200).json({ success: true });
 
   } catch (error) {
     console.error('Error:', error);
